@@ -7,7 +7,7 @@ everything is set to defaults or removed except
 
 ## how to run
 
-1. npm i
+1. `npm i` in terminal
 2. create folder called `temp` in main directory
 3. put maps in `maps.zip` in main directory
 4. `node cleaner.js` in terminal
