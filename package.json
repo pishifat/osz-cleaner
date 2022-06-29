@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "adm-zip": "^0.5.9",
+    "colors": "^1.4.0",
+    "file-type": "^16.5.3",
+    "fs-extra": "^10.0.1"
+  }
+}
