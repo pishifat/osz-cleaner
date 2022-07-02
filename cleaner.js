@@ -3,6 +3,7 @@ const fsExtra = require('fs-extra');
 const AdmZip = require('adm-zip');
 const FileType = require('file-type');
 const logger = require('./helper/logger.js');
+const getMp3Duration = require('get-mp3-duration');
 
 // find filetype
 async function findFileType(file) {
@@ -44,16 +45,17 @@ async function clean() {
         // establish new osz
         const newOsz = new AdmZip();
 
+        // note when a .osu file is cleansed so it doesn't process the rest
         let osuDone = false;
 
         // process files
         for (const file of osz) {
             const type = await findFileType(`./temp/osz/${oszString}/${file.entryName}`);
-            const skip = 'skiplineokkkkk';
+            const skip = 'skiplineokkkkk'; // this can be anything
             logger.consoleLog(file.entryName);
 
             // clean .osu
-            if (file.name.includes('osu') && !type) {
+            if (file.name.includes('osu') && !type && !osuDone) {
                 const osu = file.getData().toString();
                 const lines = osu.split('\r\n');
 
@@ -222,8 +224,14 @@ async function clean() {
 
             //add .mp3
             if (type && type.ext == 'mp3') {
-                fs.renameSync(`./temp/osz/${oszString}/${file.entryName}`, `./temp/osz/${oszString}/audio.mp3`);
-                newOsz.addLocalFile(`./temp/osz/${oszString}/audio.mp3`);
+                const buffer = file.getData();
+                const duration = getMp3Duration(buffer);
+
+                // ensure audio file isn't a .mp3 hitsound
+                if (duration > 30000) { 
+                    fs.renameSync(`./temp/osz/${oszString}/${file.entryName}`, `./temp/osz/${oszString}/audio.mp3`);
+                    newOsz.addLocalFile(`./temp/osz/${oszString}/audio.mp3`);
+                }
             }
         }
 
