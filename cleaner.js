@@ -48,6 +48,9 @@ async function clean() {
         // note when a .osu file is cleansed so it doesn't process the rest
         let osuDone = false;
 
+        // to determine if the audio file is actually processed, but very poorly
+        let mp3Count = 0;
+
         // process files
         for (const file of osz) {
             const type = await findFileType(`./temp/osz/${oszString}/${file.entryName}`);
@@ -224,6 +227,7 @@ async function clean() {
 
             //add .mp3
             if (type && type.ext == 'mp3') {
+                mp3Count++;
                 const buffer = file.getData();
                 const duration = getMp3Duration(buffer);
 
@@ -233,6 +237,10 @@ async function clean() {
                     newOsz.addLocalFile(`./temp/osz/${oszString}/audio.mp3`);
                 }
             }
+        }
+
+        if (mp3Count !== 1) {
+            logger.consoleError('Incorrect number of .mp3 files: ' + mp3Count);
         }
 
         // generate .osz
