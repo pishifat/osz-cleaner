@@ -1,21 +1,21 @@
-const colors = require('colors');
+import colors from 'colors';
 
-exports.consoleLog = function(message) {
+export function logDefault (message) {
 	console.log(message.bgBlue.black);
 }
 
-exports.consoleError = function(message) {
+export function logError (message) {
 	console.log(message.bgRed.black);
 }
 
-exports.consoleCheck = function(message) {
+export function logCheck (message) {
 	console.log(message.bgGreen.black);
 }
 
-exports.consoleInfo = function(message) {
+export function logInfo (message) {
     console.log(message.bgCyan.black);
 }
 
-exports.consoleWarn = function(message) {
+export function logWarn (message) {
     console.log(message.bgYellow.black);
 }

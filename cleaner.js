@@ -1,9 +1,9 @@
-const fs = require('fs');
-const fsExtra = require('fs-extra');
-const AdmZip = require('adm-zip');
-const FileType = require('file-type');
-const logger = require('./helper/logger.js');
-const getMp3Duration = require('get-mp3-duration');
+import fs from 'fs';
+import fsExtra from 'fs-extra';
+import AdmZip from 'adm-zip';
+import FileType from 'file-type';
+import { logDefault, logError, logCheck, logInfo, logWarn } from './helper/logger.js';
+import { parseBuffer } from 'music-metadata';
 
 // find filetype
 async function findFileType(file) {
@@ -25,8 +25,8 @@ function reset() {
 
 // clean
 async function clean() {
-    logger.consoleCheck('start');
-    logger.consoleWarn(`---`);
+    logCheck('start');
+    logWarn(`---`);
 
     // extract everything to ./temp
     const zip = new AdmZip(`./maps.zip`);
@@ -36,7 +36,7 @@ async function clean() {
     // process each .osz
     for (const zipEntry of zipEntries) {
         const oszString = zipEntry.entryName;
-        logger.consoleInfo(`Filename: '${oszString}'`);
+        logInfo(`Filename: '${oszString}'`);
 
         const oszZip = new AdmZip(`./temp/unpacked/${oszString}`);
         oszZip.extractAllTo(`./temp/osz/${oszString}`, true);
@@ -49,16 +49,16 @@ async function clean() {
         let osuDone = false;
 
         // to determine if the audio file is actually processed, but very poorly
-        let mp3Count = 0;
+        let audioFileCount = 0;
 
         // process files
         for (const file of osz) {
             const type = await findFileType(`./temp/osz/${oszString}/${file.entryName}`);
             const skip = 'skiplineokkkkk'; // this can be anything
-            logger.consoleLog(file.entryName);
 
             // clean .osu
             if (file.name.includes('osu') && !type && !osuDone) {
+                logDefault(file.entryName);
                 const osu = file.getData().toString();
                 const lines = osu.split('\r\n');
 
@@ -72,7 +72,17 @@ async function clean() {
 
                     // [General]
                     if (line.includes('AudioFilename:')) {
-                        lines[i] = 'AudioFilename: audio.mp3';
+                        let extension;
+
+                        if (line.includes('.mp3')) {
+                            extension = '.mp3';
+                        } else if (line.includes('.ogg')) {
+                            extension = '.ogg';
+                        } else {
+                            logError(`Can't find audio extension from .osu file`);
+                        }
+
+                        lines[i] = `AudioFilename: audio${extension}`;
                     } else if (line.includes('AudioLeadIn:')) {
                         lines[i] = 'AudioLeadIn: 0';
                     } else if (line.includes('PreviewTime:')) {
@@ -225,32 +235,42 @@ async function clean() {
                 osuDone = true;
             }
 
-            //add .mp3
-            if (type && type.ext == 'mp3') {
-                mp3Count++;
+            //add .mp3 or .ogg
+            if (type && (type.ext == 'mp3' || type.ext == 'ogg')) {
                 const buffer = file.getData();
-                const duration = getMp3Duration(buffer);
+                const audioData = await parseBuffer(buffer);
 
-                // ensure audio file isn't a .mp3 hitsound
-                if (duration > 30000) { 
-                    fs.renameSync(`./temp/osz/${oszString}/${file.entryName}`, `./temp/osz/${oszString}/audio.mp3`);
-                    newOsz.addLocalFile(`./temp/osz/${oszString}/audio.mp3`);
+                // ensure audio file isn't a hitsound
+                if (audioData.format.duration > 30) {
+                    logDefault(file.entryName);
+                    // ensure 192kbps .mp3
+                    if (type.ext == 'mp3' && audioData.format.bitrate !== 192000) {
+                        logError(`Incorrect .mp3 bitrate: ${audioData.format.bitrate}`);
+                    }
+
+                    if (type.ext == 'ogg' && (audioData.format.bitrate > 192000 || audioData.format.bitrate < 128000)) {
+                        logError(`Incorrect .ogg bitrate: ${audioData.format.bitrate}`);
+                    }
+
+                    audioFileCount++;
+                    fs.renameSync(`./temp/osz/${oszString}/${file.entryName}`, `./temp/osz/${oszString}/audio.${type.ext}`);
+                    newOsz.addLocalFile(`./temp/osz/${oszString}/audio.${type.ext}`);
                 }
             }
         }
 
-        if (mp3Count !== 1) {
-            logger.consoleError('Incorrect number of .mp3 files: ' + mp3Count);
+        if (audioFileCount !== 1) {
+            logError('Incorrect number of audio files: ' + audioFileCount);
         }
 
         // generate .osz
         newOsz.writeZip(`./output/${oszString}`);
 
-        logger.consoleInfo('Generated clean `.osz`');
-        logger.consoleWarn('---');
+        logInfo('Generated clean `.osz`');
+        logWarn('---');
     }
 
-    logger.consoleCheck('done');
+    logCheck('done');
 }
 
 reset();
