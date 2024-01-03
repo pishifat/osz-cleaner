@@ -4,6 +4,7 @@ everything is set to defaults or removed except
 
 - song metadata (artist/title)
 - timing points (BPM/meter)
+- background (if `background` variable in `variables.json` is set to `false`
 
 ## how to run
 
