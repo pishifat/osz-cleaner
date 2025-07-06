@@ -283,12 +283,21 @@ async function clean() {
 
         if (variables.background) {
             for (const file of osz) {
-                const type = await findFileType(`./temp/osz/${oszString}/${file.entryName}`);
+                const filePath = `./temp/osz/${oszString}/${file.entryName}`;
+                if (!fs.existsSync(filePath)) continue;
+                
+                const type = await findFileType(filePath);
                 if (backgroundName && type && (type.ext == 'jpg' || type.ext == 'jpeg' || type.ext == 'png')) {
                     if (file.entryName == backgroundName) {
                         logDefault(file.entryName);
-                        fs.renameSync(`./temp/osz/${oszString}/${file.entryName}`, `./temp/osz/${oszString}/background.${type.ext}`);
-                        newOsz.addLocalFile(`./temp/osz/${oszString}/background.${type.ext}`);
+                        const sourcePath = `./temp/osz/${oszString}/${file.entryName}`;
+                        const destPath = `./temp/osz/${oszString}/background.${type.ext}`;
+                        if (fs.existsSync(sourcePath)) {
+                            fs.renameSync(sourcePath, destPath);
+                            newOsz.addLocalFile(destPath);
+                        } else {
+                            logError(`Background file not found: ${sourcePath}`);
+                        }
                     }
                 }
             }
