@@ -4,7 +4,7 @@ import AdmZip from 'adm-zip';
 import FileType from 'file-type';
 import { logDefault, logError, logCheck, logInfo, logWarn } from './helper/logger.js';
 import { parseBuffer } from 'music-metadata';
-import variables from './variables.json' assert { type: 'json' };
+import variables from './variables.json' with { type: 'json' };
 
 // find filetype
 async function findFileType(file) {
