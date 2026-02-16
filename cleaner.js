@@ -4,7 +4,7 @@ import AdmZip from 'adm-zip';
 import FileType from 'file-type';
 import { logDefault, logError, logCheck, logInfo, logWarn } from './helper/logger.js';
 import { parseBuffer } from 'music-metadata';
-import variables from './variables.json' with { type: 'json' };
+import config from './config.json' with { type: 'json' };
 
 // find filetype
 async function findFileType(file) {
@@ -158,7 +158,7 @@ async function clean() {
 
                     if (eventsTrigger) {
                         // keep bg
-                        if (variables.background) {
+                        if (config.background) {
                             const split = line.split(",");
 
                             if (split[0] == "0") {
@@ -281,7 +281,7 @@ async function clean() {
             }
         }
 
-        if (variables.background) {
+        if (config.background) {
             for (const file of osz) {
                 const filePath = `./temp/osz/${oszString}/${file.entryName}`;
                 if (!fs.existsSync(filePath)) continue;
